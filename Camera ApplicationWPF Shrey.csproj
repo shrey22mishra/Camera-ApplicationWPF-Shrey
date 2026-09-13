@@ -1,17 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <!-- This legacy entry point exists for users who open the .csproj directly.
+         The actual WPF application lives under src\WpfCameraApp. -->
     <TargetFramework>net8.0-windows</TargetFramework>
-    <RootNamespace>Camera_ApplicationWPF_Shrey</RootNamespace>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <EnableDefaultItems>false</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="src\WpfCameraApp\WpfCameraApp.csproj" />
-    <None Include="tests\WpfCameraApp.Tests\WpfCameraApp.Tests.csproj" />
+    <ProjectReference Include="src\WpfCameraApp\WpfCameraApp.csproj" />
   </ItemGroup>
 
 </Project>

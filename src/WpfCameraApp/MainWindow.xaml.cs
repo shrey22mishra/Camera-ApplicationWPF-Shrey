@@ -8,18 +8,25 @@ namespace WpfCameraApp
     {
         public MainWindow()
         {
-            // Use LoadComponent to initialize XAML to avoid ambiguous generated InitializeComponent in some build environments.
-            var uri = new System.Uri("/WpfCameraApp;component/MainWindow.xaml", System.UriKind.Relative);
-            System.Windows.Application.LoadComponent(this, uri);
+            InitializeComponent();
+            this.Closed += MainWindow_Closed;
+        }
 
-            // Ensure camera service is stopped when window closes
-            this.Closed += (s, e) =>
+        private void PreviewImageControl_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (DataContext is ViewModels.MainViewModel vm && sender is System.Windows.FrameworkElement fe)
             {
-                if (this.DataContext is IDisposable d)
-                {
-                    try { d.Dispose(); } catch { }
-                }
-            };
+                vm.PreviewImageActualWidth = fe.ActualWidth;
+                vm.PreviewImageActualHeight = fe.ActualHeight;
+            }
+        }
+
+        private void MainWindow_Closed(object? sender, System.EventArgs e)
+        {
+            if (DataContext is IDisposable d)
+            {
+                try { d.Dispose(); } catch { }
+            }
         }
     }
 }

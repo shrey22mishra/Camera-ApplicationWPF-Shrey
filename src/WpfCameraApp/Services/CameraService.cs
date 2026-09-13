@@ -7,23 +7,26 @@ using WpfCameraApp.Services.Interfaces;
 
 namespace WpfCameraApp.Services
 {
-    /// <summary>
-    /// Camera capture service using OpenCvSharp. Responsible only for capture and frame delivery.
-    /// </summary>
     public class CameraService : ICameraService
     {
         private readonly IVideoCaptureFactory _factory;
-        private VideoCapture? _capture;
+        private VideoCapture? capture;
         private Task? _captureTask;
         private CancellationTokenSource? _internalCts;
         private readonly object _sync = new();
+        private bool _disposed;
 
         public event EventHandler<CameraFrameEventArgs>? FrameArrived;
         public event EventHandler<string>? ErrorOccurred;
 
         public bool IsRunning { get; private set; }
 
-        public CameraService(IVideoCaptureFactory? factory = null)
+        public CameraService()
+            : this(null)
+        {
+        }
+
+        public CameraService(IVideoCaptureFactory? factory)
         {
             _factory = factory ?? new DefaultVideoCaptureFactory();
         }
@@ -32,70 +35,72 @@ namespace WpfCameraApp.Services
         {
             lock (_sync)
             {
+                if (_disposed)
+                    throw new ObjectDisposedException(nameof(CameraService));
+
                 if (IsRunning)
                     return;
 
                 _internalCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            }
 
-            try
-            {
-                _capture = _factory.Create();
-                // Try to open the default camera device if not already opened via ctor
-                if (!_capture.IsOpened())
+                try
                 {
-                    // Attempt to open index 0 explicitly
-                    _capture.Open(0);
+                    capture = _factory.Create();
+                    if (!capture.IsOpened())
+                        capture.Open(0);
+
+                    if (!capture.IsOpened())
+                        throw new InvalidOperationException("The camera could not be opened.");
                 }
-
-                if (!_capture.IsOpened())
+                catch (Exception ex)
                 {
-                    OnError("Failed to open camera device.");
+                    OnError("Unable to start camera: " + ex.Message);
                     CleanupCapture();
-                    return;
+                    throw new InvalidOperationException("Unable to start camera.", ex);
                 }
-
-                IsRunning = true;
 
                 var token = _internalCts.Token;
                 _captureTask = Task.Run(() => CaptureLoopAsync(token), CancellationToken.None);
+                IsRunning = true;
+            }
 
-                await Task.CompletedTask;
-            }
-            catch (Exception ex)
-            {
-                OnError($"Camera start error: {ex.Message}");
-                CleanupCapture();
-                IsRunning = false;
-            }
+            await Task.CompletedTask;
         }
 
         private async Task CaptureLoopAsync(CancellationToken token)
         {
+            int consecutiveFailures = 0;
+            const int tries = 30;
             try
             {
                 while (!token.IsCancellationRequested)
                 {
-                    if (_capture == null)
+                    if (capture == null)
                         break;
 
                     using var mat = new Mat();
                     try
                     {
-                        // Read frame (blocking for a frame). Read returns false on failure.
-                        if (!_capture.Read(mat) || mat.Empty())
+                        if (!capture.Read(mat) || mat.Empty())
                         {
-                            // brief delay before retrying to avoid tight loop on failure
-                            await Task.Delay(15, token).ConfigureAwait(false);
+                            consecutiveFailures++;
+                            if (consecutiveFailures >= tries)
+                            {
+                                OnError("Camera appears to be unavailable. Stopping capture.");
+                                try { _internalCts?.Cancel(); } catch { }
+                                break;
+                            }
+
+                            await Task.Delay(50, token).ConfigureAwait(false);
                             continue;
                         }
 
-                        // Encode the frame as BMP in-memory. Consumers can decode or convert as needed.
-                        // This keeps ownership clear: service provides a copy of encoded bytes.
+                        consecutiveFailures = 0;
+
                         byte[]? buf = null;
                         try
                         {
-                            buf = mat.ImEncode(".bmp");
+                            buf = mat.ImEncode(".png");
                         }
                         catch (Exception encodeEx)
                         {
@@ -121,7 +126,6 @@ namespace WpfCameraApp.Services
             }
             finally
             {
-                // Ensure running state updated and resources cleaned
                 IsRunning = false;
                 CleanupCapture();
             }
@@ -134,23 +138,27 @@ namespace WpfCameraApp.Services
                 if (!IsRunning)
                     return;
 
-                _internalCts?.Cancel();
+                try
+                {
+                    _internalCts?.Cancel();
+                }
+                catch { }
             }
 
             try
             {
-                if (_captureTask != null)
+                var t = _captureTask;
+                if (t != null)
                 {
-                    await _captureTask.ConfigureAwait(false);
+                    await t.ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException)
             {
-                // expected on cancellation
             }
             catch (Exception ex)
             {
-                OnError($"Error while stopping camera: {ex.Message}");
+                OnError("Error while stopping camera: " + ex.Message);
             }
             finally
             {
@@ -163,17 +171,17 @@ namespace WpfCameraApp.Services
         {
             try
             {
-                _capture?.Release();
+                capture?.Release();
             }
             catch { }
 
             try
             {
-                _capture?.Dispose();
+                capture?.Dispose();
             }
             catch { }
 
-            _capture = null;
+            capture = null;
 
             try
             {
@@ -196,11 +204,12 @@ namespace WpfCameraApp.Services
 
         public void Dispose()
         {
-            try
-            {
-                _internalCts?.Cancel();
-            }
-            catch { }
+            if (_disposed)
+                return;
+
+            _disposed = true;
+
+            try { _internalCts?.Cancel(); } catch { }
 
             try
             {

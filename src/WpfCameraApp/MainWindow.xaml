@@ -1,71 +1,98 @@
 <Window x:Class="WpfCameraApp.MainWindow"
-<?xml version="1.0" encoding="utf-8"?>
-<Window x:Class="WpfCameraApp.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework"
         xmlns:vm="clr-namespace:WpfCameraApp.ViewModels"
-        Title="WpfCameraApp" Height="600" Width="1000" MinHeight="480" MinWidth="800">
+        Title="Studio Camera" Height="680" Width="1120" MinHeight="540" MinWidth="900"
+        Background="{StaticResource PageBrush}">
 
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
 
-    <Grid Margin="10">
+    <Grid Margin="28">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*" />
-            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="2.1*" />
+            <ColumnDefinition Width="1*" />
         </Grid.ColumnDefinitions>
 
-        <!-- Preview area with overlay canvas for face rectangles -->
-        <Border Grid.Column="0" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="4">
+        <Border Grid.Column="0" Background="#0F172A" CornerRadius="14" Padding="12">
             <Grid>
-                <Image x:Name="PreviewImage" Stretch="Uniform" Source="{Binding PreviewImage}" />
-                <Canvas IsHitTestVisible="False">
-                    <!-- Face rectangles will be drawn here in future -->
+                <Image x:Name="PreviewImageControl" Stretch="Uniform" Source="{Binding PreviewImage}" SizeChanged="PreviewImageControl_SizeChanged" />
+                <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12" Padding="10,5" Background="#CC0F172A" CornerRadius="12">
+                    <TextBlock Text="LIVE PREVIEW" Foreground="White" FontSize="11" FontWeight="SemiBold" />
+                </Border>
+                <Canvas IsHitTestVisible="False" Width="{Binding ActualWidth, ElementName=PreviewImageControl}" Height="{Binding ActualHeight, ElementName=PreviewImageControl}">
+                    <ItemsControl ItemsSource="{Binding FaceRects}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Canvas />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <!-- ItemsControl wraps each item in a ContentPresenter. Canvas
+                             coordinates must be set on that direct child, not the
+                             Rectangle inside the data template. -->
+                        <ItemsControl.ItemContainerStyle>
+                            <Style TargetType="ContentPresenter">
+                                <Setter Property="Canvas.Left" Value="{Binding X}" />
+                                <Setter Property="Canvas.Top" Value="{Binding Y}" />
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Rectangle Stroke="#22C55E" StrokeThickness="2" Fill="Transparent"
+                                           Width="{Binding Width}" Height="{Binding Height}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </Canvas>
             </Grid>
         </Border>
 
-        <!-- Controls -->
-        <StackPanel Grid.Column="1" Margin="12,0,0,0">
-            <TextBlock Text="Controls" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
+        <Border Grid.Column="1" Margin="22,0,0,0" Background="{StaticResource PanelBrush}" CornerRadius="14" Padding="24">
+        <StackPanel>
+            <TextBlock Text="Studio Camera" Foreground="{StaticResource TextBrush}" FontSize="24" FontWeight="SemiBold" />
+            <TextBlock Text="Tune the live feed and detect faces." Foreground="{StaticResource MutedTextBrush}" Margin="0,5,0,22" />
 
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                <Button Content="Start Camera" Command="{Binding StartCommand}" Width="110" Margin="0,0,8,0" />
-                <Button Content="Stop Camera" Command="{Binding StopCommand}" Width="110" Margin="0,0,8,0" />
-                <Button Content="Reset" Command="{Binding ResetCommand}" Width="80" />
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                <Button Content="Start" Command="{Binding StartCommand}" Margin="0,0,8,0" />
+                <Button Content="Stop" Command="{Binding StopCommand}" Background="#334155" Margin="0,0,8,0" />
+                <Button Content="Reset" Command="{Binding ResetCommand}" Background="#E2E8F0" Foreground="#334155" />
             </StackPanel>
 
-            <StackPanel Orientation="Vertical" Margin="0,0,0,8">
-                <Label Content="Filter" />
+            <StackPanel Orientation="Vertical" Margin="0,0,0,14">
+                <TextBlock Text="FILTER" Foreground="{StaticResource MutedTextBrush}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,6" />
                 <ComboBox ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter}" />
             </StackPanel>
 
-            <StackPanel Orientation="Vertical" Margin="0,0,0,8">
-                <Label Content="Brightness" />
+            <StackPanel Orientation="Vertical" Margin="0,0,0,14">
+                <TextBlock Text="BRIGHTNESS" Foreground="{StaticResource MutedTextBrush}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,6" />
                 <Slider Minimum="-1" Maximum="1" Value="{Binding Brightness, Mode=TwoWay}" TickFrequency="0.1" />
             </StackPanel>
 
-            <StackPanel Orientation="Vertical" Margin="0,0,0,8">
-                <Label Content="Contrast" />
-                <Slider Minimum="0" Maximum="3" Value="{Binding Contrast, Mode=TwoWay}" TickFrequency="0.1" />
+            <StackPanel Orientation="Vertical" Margin="0,0,0,14">
+                <TextBlock Text="CONTRAST" Foreground="{StaticResource MutedTextBrush}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,6" />
+                <Slider Minimum="0" Maximum="2" Value="{Binding Contrast, Mode=TwoWay}" TickFrequency="0.1" />
             </StackPanel>
 
-            <StackPanel Orientation="Vertical" Margin="0,0,0,8">
-                <Label Content="Tint" />
+            <StackPanel Orientation="Vertical" Margin="0,0,0,20">
+                <TextBlock Text="TINT" Foreground="{StaticResource MutedTextBrush}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,6" />
                 <Slider Minimum="-1" Maximum="1" Value="{Binding Tint, Mode=TwoWay}" TickFrequency="0.1" />
             </StackPanel>
 
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,6,0,8">
-                <CheckBox IsChecked="{Binding DetectFaces, Mode=TwoWay}" Content="Detect Faces" />
+            <StackPanel Margin="0,0,0,18">
+                <TextBlock Text="ANALYSIS" Foreground="{StaticResource MutedTextBrush}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,7" />
+                <primitives:ToggleButton IsChecked="{Binding DetectFaces, Mode=TwoWay}" Content="Detect Faces" HorizontalAlignment="Left" />
             </StackPanel>
 
-            <TextBlock Text="Status" FontWeight="SemiBold" Margin="0,8,0,4" />
-            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Foreground="#333" />
+            <Border Background="#F1F5F9" CornerRadius="8" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="STATUS" Foreground="{StaticResource MutedTextBrush}" FontSize="11" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
 
-            <StackPanel VerticalAlignment="Bottom" Margin="0,16,0,0">
-                <TextBlock FontSize="12" Foreground="#666">Tip: Controls are placeholders until capture is implemented.</TextBlock>
-            </StackPanel>
         </StackPanel>
+        </Border>
     </Grid>
 </Window>

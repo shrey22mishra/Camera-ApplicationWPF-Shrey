@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 
 namespace WpfCameraApp.ViewModels
 {
-    // Minimal ViewModel base providing INotifyPropertyChanged support.
     public abstract class ViewModelBase : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;

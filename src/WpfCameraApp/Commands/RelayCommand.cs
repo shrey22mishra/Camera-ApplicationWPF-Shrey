@@ -3,7 +3,6 @@ using System.Windows.Input;
 
 namespace WpfCameraApp.Commands
 {
-    // Minimal ICommand implementation suitable for placeholder commands.
     public class RelayCommand : ICommand
     {
         private readonly Action<object?> _execute;

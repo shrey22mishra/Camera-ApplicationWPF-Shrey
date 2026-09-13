@@ -4,7 +4,6 @@ using System.Windows.Input;
 
 namespace WpfCameraApp.Commands
 {
-    // Minimal asynchronous ICommand implementation suitable for long-running operations.
     public class AsyncCommand : ICommand
     {
         private readonly Func<Task> _execute;
