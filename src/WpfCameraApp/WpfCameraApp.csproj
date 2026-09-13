@@ -1,12 +1,17 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>ZEISS-Logo.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="ZEISS-Logo.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- OpenCvSharp packages for webcam capture and image processing -->
@@ -16,8 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Resources\haarcascade_frontalface_default.xml"
-          CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Resources\haarcascade_frontalface_default.xml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
